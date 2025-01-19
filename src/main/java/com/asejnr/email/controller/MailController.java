@@ -2,6 +2,7 @@ package com.asejnr.email.controller;
 
 import com.asejnr.email.service.MailService;
 
+import com.asejnr.email.service.TemplateService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
@@ -17,6 +18,8 @@ import java.io.FileNotFoundException;
 public class MailController {
     @Autowired
     private MailService mailService;
+    @Autowired
+    private TemplateService templateService;
 
     @GetMapping("/text")
     public void sendTextMail(@RequestParam String to,
@@ -27,7 +30,14 @@ public class MailController {
     }
 
     @GetMapping("/inline")
-    public void sendInlineHtmlMessage(String to, String message) throws MessagingException, FileNotFoundException {
-        mailService.innerHtmlMail(to, message);
+    public void sendInlineHtmlMessage(String to, String subject, String message) throws MessagingException, FileNotFoundException {
+        String formattedMessage = "<h2>" + message + "</h2>";
+        mailService.innerHtmlMail(to, subject, formattedMessage);
+    }
+
+
+    @GetMapping("/password-reset")
+    public void sendPasswordResetHtmlMessage(String lang, String to, String subject) throws MessagingException, FileNotFoundException {
+        templateService.sendPasswordResetMail(lang, to, subject);
     }
 }

@@ -10,7 +10,11 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ResourceUtils;
 
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 @Service
 public class MailService {
@@ -30,8 +34,8 @@ public class MailService {
     }
 
     @SneakyThrows
-    public void innerHtmlMail(String to, String subject) throws MessagingException, FileNotFoundException {
-        String htmlBody = "<html><body><p>JUnit cheatsheet!</p><img src='cid:logo' alt='logo'/></body></html>";
+    public void innerHtmlMail(String to, String subject, String html) throws MessagingException, FileNotFoundException {
+        String htmlBody = "<html><body><p>JUnit cheatsheet!</p><img src='cid:logo' alt='logo'/>" + html + "</body></html>";
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
@@ -44,5 +48,35 @@ public class MailService {
         helper.addInline("logo", ResourceUtils.getFile("classpath:templates/mail/attachments/logo.png"));
 
         mailSender.send(message);
+    }
+
+    public record MailResource(String name, File file)  {}
+
+    public void sendHtmlMailWithResources(String to, String subject, String html, List<MailResource> inlines, List<MailResource> attachments) throws MessagingException, FileNotFoundException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom(NO_REPLY_EMAIL);
+        helper.setTo(to);
+        helper.setSubject(subject);
+
+        if (Objects.nonNull(attachments)) {
+            for (MailResource attachment : attachments) {
+                helper.addAttachment(attachment.name, attachment.file);
+            }
+        }
+
+        helper.setText(html, true);
+
+        if (Objects.nonNull(inlines)) {
+            for (MailResource inline : inlines) {
+                helper.addInline(inline.name, inline.file);
+            }
+        }
+        mailSender.send(message);
+    }
+
+    public void sendHtmlMail(String to, String subject, String html) throws MessagingException, FileNotFoundException {
+        sendHtmlMailWithResources(to, subject, html, Collections.emptyList(), Collections.emptyList());
     }
 }
